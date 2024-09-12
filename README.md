@@ -9,11 +9,9 @@
 
 ## 安装
 
-[**Chrome** extension]()
+[**Chrome** extension](https://github.com/ejacky/flomo-input/releases/tag/1.0.0)
 
-## Contribution
 
-Suggestions and pull requests are welcomed!.
 
 ---
 
