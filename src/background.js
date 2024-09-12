@@ -46,7 +46,7 @@ function actuallyCreateFloatingWindow() {
       height: 300,
       left: primaryDisplay.workArea.width - 350,
       top: 100,
-      focused: false
+      focused: true,
     }, (window) => {
       floatingWindowId = window.id;
       
@@ -82,6 +82,7 @@ function actuallyCreateFloatingWindow() {
 function ensureFloatingWindowVisible() {
   if (floatingWindowId !== null) {
     chrome.windows.get(floatingWindowId, (window) => {
+      console.log("Window focused:", window.focused);
       if (chrome.runtime.lastError) {
         console.log("Window not found, creating a new one");
         floatingWindowId = null;
