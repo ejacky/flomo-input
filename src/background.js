@@ -57,7 +57,8 @@ function actuallyCreateFloatingWindow() {
           }
         });
       } catch (error) {
-        console.log("不支持 alwaysOnTop，使用备选方案");
+        console.error("不支持 alwaysOnTop：", error.message);
+        console.log("使用备选方案确保窗口可见性");
         startEnsureVisibilityInterval();
       }
 
@@ -90,22 +91,8 @@ function ensureFloatingWindowVisible() {
 
 // 如果需要模拟 alwaysOnTop 行为
 function startEnsureVisibilityInterval() {
-  setInterval(ensureFloatingWindowVisible, 3000); // 每3秒检查一次
+  setInterval(ensureFloatingWindowVisible, 10000); // 每10秒检查一次
 }
-
-// 监听标签页激活事件
-chrome.tabs.onActivated.addListener((activeInfo) => {
-  if (floatingWindowId !== null) {
-    ensureFloatingWindowVisible();
-  }
-});
-
-// 监听窗口焦点变化事件
-chrome.windows.onFocusChanged.addListener((windowId) => {
-  if (windowId !== chrome.windows.WINDOW_ID_NONE && floatingWindowId !== null) {
-    ensureFloatingWindowVisible(); 
-  }
-});
 
 // 监听来自浮动窗口的消息
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
