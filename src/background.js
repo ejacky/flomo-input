@@ -87,7 +87,15 @@ function ensureFloatingWindowVisible() {
         floatingWindowId = null;
         createFloatingWindow();
       } else if (!window.focused) {
-        chrome.windows.update(floatingWindowId, { focused: true });
+        chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+          if (tabs.length > 0) {
+            chrome.tabs.sendMessage(tabs[0].id, {action: "checkUserActivity"}, function(response) {
+              if (response && !response.isUserActive) {
+                chrome.windows.update(floatingWindowId, { focused: true });
+              }
+            });
+          }
+        });
       }
     });
   } else {
@@ -100,7 +108,7 @@ function startEnsureVisibilityInterval() {
   if (visibilityIntervalId) {
     clearInterval(visibilityIntervalId);
   }
-  visibilityIntervalId = setInterval(ensureFloatingWindowVisible, 5000); // 每3秒检查一次
+  visibilityIntervalId = setInterval(ensureFloatingWindowVisible, 3000); // 每3秒检查一次
 }
 
 // 监听来自浮动窗口的消息
