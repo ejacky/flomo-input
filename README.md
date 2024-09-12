@@ -1,13 +1,13 @@
 # <img src="public/icons/icon_48.png" width="45" align="left"> Flomo Input
 
-My Chrome Extension
+一个始终至于浏览器最前面的 flomo 输入窗口， 简化记笔记的流程使你有想法或灵感能及时记录下来。
 
-## Features
+## 特点
 
-- Feature 1
-- Feature 2
+- 输入窗口处于浏览器的最前面
+- 会判断是否有浏览器操作行为而选择什么时候弹出窗口
 
-## Install
+## 安装
 
 [**Chrome** extension]()
 
