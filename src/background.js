@@ -13,7 +13,7 @@ chrome.action.onClicked.addListener((tab) => {
   console.log("Action clicked");
   
   if (floatingWindowId !== null) {
-    ensureFloatingWindowVisible(); // 这里原来是 focusFloatingWindow()
+    ensureFloatingWindowVisible(true); // 传入 true 表示这是用户点击
   } else {
     createFloatingWindow();
   }
@@ -79,7 +79,7 @@ function actuallyCreateFloatingWindow() {
   });
 }
 
-function ensureFloatingWindowVisible() {
+function ensureFloatingWindowVisible(isUserClick = false) {
   if (floatingWindowId !== null) {
     chrome.windows.get(floatingWindowId, (window) => {
       console.log("Window focused:", window.focused);
@@ -88,15 +88,21 @@ function ensureFloatingWindowVisible() {
         floatingWindowId = null;
         createFloatingWindow();
       } else if (!window.focused) {
-        chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-          if (tabs.length > 0) {
-            chrome.tabs.sendMessage(tabs[0].id, {action: "checkUserActivity"}, function(response) {
-              if (response && !response.isUserActive) {
-                chrome.windows.update(floatingWindowId, { focused: true });
-              }
-            });
-          }
-        });
+        if (isUserClick) {
+          // 如果是用户点击，直接设置焦点
+          chrome.windows.update(floatingWindowId, { focused: true });
+        } else {
+          // 如果不是用户点击，检查用户活动
+          chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+            if (tabs.length > 0) {
+              chrome.tabs.sendMessage(tabs[0].id, {action: "checkUserActivity"}, function(response) {
+                if (response && !response.isUserActive) {
+                  chrome.windows.update(floatingWindowId, { focused: true });
+                }
+              });
+            }
+          });
+        }
       }
     });
   } else {
