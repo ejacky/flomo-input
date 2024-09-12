@@ -2,42 +2,70 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>My Chrome Extension</title>
-    <link rel="stylesheet" href="popup.css" />
-  
+    <title>Flomo Input</title>
     <style>
-      body {
-        margin: 0;
-        padding: 10px;
-        background-color: rgba(255, 255, 255, 0.9);
-        border: 1px solid #ccc;
-        border-radius: 5px;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-      }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            margin: 0;
+            padding: 10px;
+            background-color: #ffffff;
+        }
+        .input-container {
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            padding: 10px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        textarea {
+            width: 100%;
+            min-height: 100px;
+            border: none;
+            resize: vertical;
+            font-size: 14px;
+            line-height: 1.5;
+            outline: none;
+        }
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 10px;
+        }
+        .formatting-tools {
+            display: flex;
+            gap: 10px;
+        }
+        .formatting-tools button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            color: #666;
+        }
+        .submit-button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 5px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
     </style>
-  </head>
+</head>
 <body>
-  <div class="app">
-    <p class="counter-label">Counter</p>
-    <div id="counter" class="counter"></div>
-    <div class="button-container">
-      <button id="decrementBtn" class="button">-</button>
-      <button id="incrementBtn" class="button">+</button>
+    <div class="input-container">
+        <textarea placeholder="现在的想法是..."></textarea>
+        <div class="toolbar">
+            <div class="formatting-tools">
+                <button title="Bold">B</button>
+                <button title="Italic">I</button>
+                <button title="Underline">U</button>
+                <button title="List">•</button>
+                <button title="Link">🔗</button>
+            </div>
+            <button class="submit-button">➡</button>
+        </div>
     </div>
-
-    <hr class="divider" />
-
-    <p class="title">Chrome Extension is Ready!</p>
-    <p class="subtitle">Start by updating <code>popup.html</code></p>
-  </div>
-
-  <script src="popup.js"></script>
-
-  <!--
-    This HTML file opens when you click on icon from the toolbar.
-
-    To begin the development, run `npm run watch`.
-    To create a production bundle, use `npm run build`.
-  -->
+    <script src="floating.js"></script>
 </body>
 </html>

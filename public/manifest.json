@@ -28,7 +28,8 @@
 },
   "permissions": [
     "storage",
-    "tabs"
+    "tabs",
+    "system.display"
   ],
   "content_scripts": [
     {
@@ -39,6 +40,12 @@
       "js": [
         "contentScript.js"
       ]
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["floating.html", "floating.js"],
+      "matches": ["<all_urls>"]
     }
   ]
 }
