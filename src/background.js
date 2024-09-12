@@ -6,6 +6,8 @@
 // See https://developer.chrome.com/extensions/background_pages
 
 let floatingWindowId = null;
+let isWindowClosedByUser = false;
+let visibilityIntervalId = null;
 
 chrome.action.onClicked.addListener((tab) => {
   console.log("Action clicked");
@@ -66,6 +68,10 @@ function actuallyCreateFloatingWindow() {
       chrome.windows.onRemoved.addListener(function windowRemovedListener(windowId) {
         if (windowId === floatingWindowId) {
           floatingWindowId = null;
+          if (visibilityIntervalId) {
+            clearInterval(visibilityIntervalId);
+            visibilityIntervalId = null;
+          }
           chrome.windows.onRemoved.removeListener(windowRemovedListener);
         }
       });
@@ -91,7 +97,10 @@ function ensureFloatingWindowVisible() {
 
 // 如果需要模拟 alwaysOnTop 行为
 function startEnsureVisibilityInterval() {
-  setInterval(ensureFloatingWindowVisible, 10000); // 每10秒检查一次
+  if (visibilityIntervalId) {
+    clearInterval(visibilityIntervalId);
+  }
+  visibilityIntervalId = setInterval(ensureFloatingWindowVisible, 5000); // 每3秒检查一次
 }
 
 // 监听来自浮动窗口的消息
