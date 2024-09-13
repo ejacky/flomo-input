@@ -11,7 +11,9 @@
 
 [下载](https://github.com/ejacky/flomo-input/releases/tag/1.0.0) 拖动该文件到浏览器扩展 `chrome://extensions/` 处。
 
+## todo
 
+- [ ] 打包 crx 后，本地下载拖拽安装报 CRX_REQUIRED_PROOF_MISSING
 
 ---
 
