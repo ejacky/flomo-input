@@ -9,7 +9,9 @@
 
 ## 安装
 
-[下载](https://github.com/ejacky/flomo-input/releases/tag/1.0.0) 拖动该文件到浏览器扩展 `chrome://extensions/` 处。
+下载本项目在 `chrome://extensions/` 处开启开发模式，点击 `加载已加压的扩展程序` 按钮上传
+
+~~[下载](https://github.com/ejacky/flomo-input/releases/tag/1.0.0) 拖动该文件到浏览器扩展 `chrome://extensions/` 处。~~
 
 ## todo
 
