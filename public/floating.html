@@ -41,6 +41,11 @@
             cursor: pointer;
             font-size: 16px;
             color: #666;
+            padding: 5px;
+            transition: color 0.3s;
+        }
+        .formatting-tools button:hover {
+            color: #4CAF50;
         }
         .submit-button {
             background-color: #4CAF50;
@@ -55,6 +60,9 @@
             margin-top: 10px;
             font-size: 12px;
         }
+        #goto-flomo {
+            font-size: 18px;
+        }
     </style>
 </head>
 <body>
@@ -67,6 +75,7 @@
                 <button title="Underline">U</button>
                 <button title="List">•</button>
                 <button title="Link">🔗</button>
+                <button title="Go to Flomo" id="goto-flomo">📝</button>
             </div>
             <button class="submit-button">➡</button>
         </div>

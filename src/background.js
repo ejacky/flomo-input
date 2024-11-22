@@ -81,28 +81,29 @@ function actuallyCreateFloatingWindow() {
 
 function ensureFloatingWindowVisible(isUserClick = false) {
   if (floatingWindowId !== null) {
-    chrome.windows.get(floatingWindowId, (window) => {
-      console.log("Window focused:", window.focused);
-      if (chrome.runtime.lastError) {
-        console.log("Window not found, creating a new one");
-        floatingWindowId = null;
-        createFloatingWindow();
-      } else if (!window.focused) {
-        if (isUserClick) {
-          // 如果是用户点击，直接设置焦点
-          chrome.windows.update(floatingWindowId, { focused: true });
-        } else {
-          // 如果不是用户点击，检查用户活动
-          chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-            if (tabs.length > 0) {
-              chrome.tabs.sendMessage(tabs[0].id, {action: "checkUserActivity"}, function(response) {
-                if (response && !response.isUserActive) {
-                  chrome.windows.update(floatingWindowId, { focused: true });
+    chrome.storage.sync.get('foregroundToggle', (data) => {
+      if (data.foregroundToggle) {
+        chrome.windows.get(floatingWindowId, (window) => {
+          if (chrome.runtime.lastError || !window) {
+            console.log("Window not found, creating a new one");
+            floatingWindowId = null;
+            createFloatingWindow();
+          } else if (!window.focused) {
+            if (isUserClick) {
+              chrome.windows.update(floatingWindowId, { focused: true });
+            } else {
+              chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+                if (tabs.length > 0) {
+                  chrome.tabs.sendMessage(tabs[0].id, { action: "checkUserActivity" }, function (response) {
+                    if (response && !response.isUserActive) {
+                      chrome.windows.update(floatingWindowId, { focused: true });
+                    }
+                  });
                 }
               });
             }
-          });
-        }
+          }
+        });
       }
     });
   } else {
@@ -115,7 +116,12 @@ function startEnsureVisibilityInterval() {
   if (visibilityIntervalId) {
     clearInterval(visibilityIntervalId);
   }
-  visibilityIntervalId = setInterval(ensureFloatingWindowVisible, 3000); // 每3秒检查一次
+
+  chrome.storage.sync.get('foregroundToggle', (data) => {
+    if (data.foregroundToggle) {
+      visibilityIntervalId = setInterval(ensureFloatingWindowVisible, 3000); // 每3秒检查一次
+    }
+  });
 }
 
 // 监听来自浮动窗口的消息

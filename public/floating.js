@@ -119,3 +119,8 @@ chrome.storage.onChanged.addListener((changes, namespace) => {
         checkAndDisplayOpenOptions();
     }
 });
+
+// 添加 flomo 快捷方式点击事件
+document.getElementById('goto-flomo').addEventListener('click', () => {
+    chrome.tabs.create({ url: 'https://v.flomoapp.com/' });
+});
