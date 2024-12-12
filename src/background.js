@@ -80,35 +80,46 @@ function actuallyCreateFloatingWindow() {
 }
 
 function ensureFloatingWindowVisible(isUserClick = false) {
-  if (floatingWindowId !== null) {
-    chrome.storage.sync.get('foregroundToggle', (data) => {
-      if (data.foregroundToggle) {
-        chrome.windows.get(floatingWindowId, (window) => {
-          if (chrome.runtime.lastError || !window) {
-            console.log("Window not found, creating a new one");
-            floatingWindowId = null;
-            createFloatingWindow();
-          } else if (!window.focused) {
-            if (isUserClick) {
-              chrome.windows.update(floatingWindowId, { focused: true });
-            } else {
-              chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-                if (tabs.length > 0) {
-                  chrome.tabs.sendMessage(tabs[0].id, { action: "checkUserActivity" }, function (response) {
-                    if (response && !response.isUserActive) {
-                      chrome.windows.update(floatingWindowId, { focused: true });
-                    }
-                  });
-                }
-              });
-            }
-          }
-        });
-      }
-    });
-  } else {
+
+  // 没有活动窗口创建一个
+  if (floatingWindowId === null) {
     createFloatingWindow();
-  }
+    return ;
+  } 
+
+  
+  chrome.windows.get(floatingWindowId, (window) => {
+    // 异常窗口，移除并创建一个
+    if (chrome.runtime.lastError || !window) {
+      console.log("Window not found, creating a new one");
+      floatingWindowId = null;
+      createFloatingWindow();
+      return ;
+    }
+    // 如果已经位于前台则不处理
+    if (window.focused) {
+      return ;
+    } else {
+      // 用户点击置于前台
+      if (isUserClick) {
+        chrome.windows.update(floatingWindowId, { focused: true });
+      } else { // 判断开启定时判断置于前台
+        chrome.storage.sync.get('foregroundToggle', (data) => {
+          if (data.foregroundToggle) {
+            chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+              if (tabs.length > 0) {
+                chrome.tabs.sendMessage(tabs[0].id, { action: "checkUserActivity" }, function (response) {
+                  if (response && !response.isUserActive) {
+                    chrome.windows.update(floatingWindowId, { focused: true });
+                  }
+                });
+              }
+            });
+          }
+        })
+      }
+    }
+  })
 }
 
 // 如果需要模拟 alwaysOnTop 行为
