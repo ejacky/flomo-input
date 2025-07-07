@@ -124,3 +124,15 @@ chrome.storage.onChanged.addListener((changes, namespace) => {
 document.getElementById('goto-flomo').addEventListener('click', () => {
     chrome.tabs.create({ url: 'https://v.flomoapp.com/' });
 });
+
+// floating.js
+window.addEventListener('DOMContentLoaded', () => {
+  const textarea = document.querySelector('textarea');
+  if (textarea) textarea.focus();
+});
+
+// 监听窗口获得焦点事件
+window.addEventListener('focus', () => {
+  const textarea = document.querySelector('textarea');
+  if (textarea) textarea.focus();
+});
