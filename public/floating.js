@@ -138,32 +138,26 @@ window.addEventListener('focus', () => {
 });
 
 document.addEventListener('DOMContentLoaded', () => {
-  const textarea = document.querySelector('textarea');
-  const linkBtn = document.getElementById('insert-link');
-  if (linkBtn && textarea) {
-    linkBtn.addEventListener('click', () => {
-      // 获取当前激活标签页的 URL
-      chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-        if (tabs && tabs[0] && tabs[0].url) {
-          // 过滤掉扩展页面自身
-          if (!tabs[0].url.startsWith('chrome-extension://')) {
-            const url = tabs[0].url;
+    const textarea = document.querySelector('textarea');
+    const linkBtn = document.getElementById('insert-link');
+    if (linkBtn && textarea) {
+      linkBtn.addEventListener('click', () => {
+        chrome.runtime.sendMessage({type: 'GET_CURRENT_TAB_URL'}, (response) => {
+          if (response && response.url) {
+            const url = response.url;
             const start = textarea.selectionStart;
             const end = textarea.selectionEnd;
             const before = textarea.value.substring(0, start);
             const after = textarea.value.substring(end);
-            const insertText = url + '\n';
+            const insertText = '\n' + url + '\n';
             textarea.value = before + insertText + after;
-            // 设置光标到新的一行
             const newPos = before.length + insertText.length;
             textarea.selectionStart = textarea.selectionEnd = newPos;
             textarea.focus();
           } else {
-            // 如果当前是扩展页面，提示用户
-            alert('请先切换到你想要插入链接的网页，再点击扩展按钮。');
+            alert('未获取到网页链接，请切换到你想要插入链接的页面。');
           }
-        }
+        });
       });
-    });
-  }
-});
+    }
+  });

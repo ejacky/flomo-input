@@ -11,7 +11,6 @@ let visibilityIntervalId = null;
 
 chrome.action.onClicked.addListener((tab) => {
   console.log("Action clicked");
-  
   if (floatingWindowId !== null) {
     ensureFloatingWindowVisible(true); // 传入 true 表示这是用户点击
   } else {
@@ -148,4 +147,43 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             });
         });
     }
+});
+
+
+// 记录当前激活标签页的 url
+let currentTabUrl = '';
+
+function updateCurrentTabUrl(tabId) {
+  chrome.tabs.get(tabId, (tab) => {
+    if (tab && tab.url && !tab.url.startsWith('chrome-extension://')) {
+      currentTabUrl = tab.url;
+    }
+  });
+}
+
+// 监听标签页切换
+chrome.tabs.onActivated.addListener(activeInfo => {
+  updateCurrentTabUrl(activeInfo.tabId);
+});
+
+// 监听标签页更新（如跳转新页面）
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (tab.active && changeInfo.url) {
+    updateCurrentTabUrl(tabId);
+  }
+});
+
+// 监听窗口切换
+chrome.windows.onFocusChanged.addListener(windowId => {
+  if (windowId === chrome.windows.WINDOW_ID_NONE) return;
+  chrome.tabs.query({active: true, windowId}, (tabs) => {
+    if (tabs[0]) updateCurrentTabUrl(tabs[0].id);
+  });
+});
+
+// 处理弹窗请求 url
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === 'GET_CURRENT_TAB_URL') {
+    sendResponse({url: currentTabUrl});
+  }
 });
