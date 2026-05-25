@@ -6,8 +6,24 @@
 // See https://developer.chrome.com/extensions/background_pages
 
 let floatingWindowId = null;
-let isWindowClosedByUser = false;
 let visibilityIntervalId = null;
+let cachedForegroundToggle = null;
+
+// Cache the foreground toggle setting and listen for changes
+chrome.storage.sync.get('foregroundToggle', (data) => {
+  cachedForegroundToggle = data.foregroundToggle || false;
+});
+chrome.storage.onChanged.addListener((changes, namespace) => {
+  if (namespace === 'sync' && 'foregroundToggle' in changes) {
+    cachedForegroundToggle = changes.foregroundToggle.newValue;
+    if (cachedForegroundToggle && floatingWindowId !== null) {
+      startEnsureVisibilityInterval();
+    } else if (!cachedForegroundToggle && visibilityIntervalId) {
+      clearInterval(visibilityIntervalId);
+      visibilityIntervalId = null;
+    }
+  }
+});
 
 chrome.action.onClicked.addListener((tab) => {
   console.log("Action clicked");
@@ -21,12 +37,12 @@ chrome.action.onClicked.addListener((tab) => {
 function createFloatingWindow() {
   // 如果已经存在窗口，先关闭它
   if (floatingWindowId !== null) {
-    chrome.windows.remove(floatingWindowId, () => {
+    const oldId = floatingWindowId;
+    floatingWindowId = null; // 提前清空，防止重复操作
+    chrome.windows.remove(oldId, () => {
       if (chrome.runtime.lastError) {
         console.log("Error closing existing window:", chrome.runtime.lastError.message);
       }
-      floatingWindowId = null;
-      // 在关闭回调中创建新窗口
       actuallyCreateFloatingWindow();
     });
   } else {
@@ -37,6 +53,10 @@ function createFloatingWindow() {
 
 function actuallyCreateFloatingWindow() {
   chrome.system.display.getInfo((displays) => {
+    if (chrome.runtime.lastError || !displays || !displays.length) {
+      console.error("无法获取显示器信息:", chrome.runtime.lastError?.message);
+      return;
+    }
     const primaryDisplay = displays.find(d => d.isPrimary) || displays[0];
     chrome.windows.create({
       url: chrome.runtime.getURL("floating.html"),
@@ -47,91 +67,89 @@ function actuallyCreateFloatingWindow() {
       top: 100,
       focused: true,
     }, (window) => {
+      if (chrome.runtime.lastError || !window) {
+        console.error("创建窗口失败:", chrome.runtime.lastError?.message);
+        return;
+      }
       floatingWindowId = window.id;
       
       // 尝试设置 alwaysOnTop
-      try {
-        chrome.windows.update(floatingWindowId, { alwaysOnTop: true }, () => {
-          if (chrome.runtime.lastError) {
-            console.log("无法设置 alwaysOnTop：", chrome.runtime.lastError.message);
-            startEnsureVisibilityInterval();
-          }
-        });
-      } catch (error) {
-        console.error("不支持 alwaysOnTop：", error.message);
-        console.log("使用备选方案确保窗口可见性");
-        startEnsureVisibilityInterval();
-      }
-
-      // 监听窗口关闭事件
-      chrome.windows.onRemoved.addListener(function windowRemovedListener(windowId) {
-        if (windowId === floatingWindowId) {
-          floatingWindowId = null;
-          if (visibilityIntervalId) {
-            clearInterval(visibilityIntervalId);
-            visibilityIntervalId = null;
-          }
-          chrome.windows.onRemoved.removeListener(windowRemovedListener);
+      chrome.windows.update(floatingWindowId, { alwaysOnTop: true }, () => {
+        if (chrome.runtime.lastError) {
+          console.log("无法设置 alwaysOnTop：", chrome.runtime.lastError.message);
+          startEnsureVisibilityInterval();
         }
       });
     });
   });
 }
 
-function ensureFloatingWindowVisible(isUserClick = false) {
+// 全局统一的窗口移除监听器（只注册一次）
+chrome.windows.onRemoved.addListener((windowId) => {
+  if (windowId === floatingWindowId) {
+    floatingWindowId = null;
+    if (visibilityIntervalId) {
+      clearInterval(visibilityIntervalId);
+      visibilityIntervalId = null;
+    }
+  }
+});
 
+function ensureFloatingWindowVisible(isUserClick = false) {
   // 没有活动窗口创建一个
   if (floatingWindowId === null) {
     createFloatingWindow();
-    return ;
-  } 
+    return;
+  }
 
-  
   chrome.windows.get(floatingWindowId, (window) => {
     // 异常窗口，移除并创建一个
     if (chrome.runtime.lastError || !window) {
       console.log("Window not found, creating a new one");
       floatingWindowId = null;
       createFloatingWindow();
-      return ;
+      return;
     }
     // 如果已经位于前台则不处理
     if (window.focused) {
-      return ;
-    } else {
-      // 用户点击置于前台
-      if (isUserClick) {
-        chrome.windows.update(floatingWindowId, { focused: true });
-      } else { // 判断开启定时判断置于前台
-        chrome.storage.sync.get('foregroundToggle', (data) => {
-          if (data.foregroundToggle) {
-            chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-              if (tabs.length > 0) {
-                chrome.tabs.sendMessage(tabs[0].id, { action: "checkUserActivity" }, function (response) {
-                  if (response && !response.isUserActive) {
-                    chrome.windows.update(floatingWindowId, { focused: true });
-                  }
-                });
-              }
-            });
-          }
-        })
-      }
+      return;
     }
-  })
+
+    // 用户点击直接置于前台
+    if (isUserClick) {
+      chrome.windows.update(floatingWindowId, { focused: true });
+      return;
+    }
+
+    // 定时判断：用户未活跃时才将窗口置前
+    if (cachedForegroundToggle) {
+      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        if (tabs.length > 0 && tabs[0].id) {
+          chrome.tabs.sendMessage(tabs[0].id, { action: "checkUserActivity" }, (response) => {
+            if (chrome.runtime.lastError) {
+              // 内容脚本可能未注入（如 chrome:// 页面）
+              return;
+            }
+            if (response && !response.isUserActive) {
+              chrome.windows.update(floatingWindowId, { focused: true });
+            }
+          });
+        }
+      });
+    }
+  });
 }
 
 // 如果需要模拟 alwaysOnTop 行为
 function startEnsureVisibilityInterval() {
   if (visibilityIntervalId) {
     clearInterval(visibilityIntervalId);
+    visibilityIntervalId = null;
   }
 
-  chrome.storage.sync.get('foregroundToggle', (data) => {
-    if (data.foregroundToggle) {
-      visibilityIntervalId = setInterval(ensureFloatingWindowVisible, 3000); // 每3秒检查一次
-    }
-  });
+  if (cachedForegroundToggle) {
+    visibilityIntervalId = setInterval(() => ensureFloatingWindowVisible(false), 3000); // 每3秒检查一次
+  }
 }
 
 // 监听来自浮动窗口的消息

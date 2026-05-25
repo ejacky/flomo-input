@@ -13,3 +13,5 @@ build.*
 
 size-plugin.json
 
+*.crx
+
