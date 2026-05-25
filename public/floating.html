@@ -10,6 +10,27 @@
             padding: 10px;
             background-color: #ffffff;
         }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+        .header h1 {
+            font-size: 14px;
+            margin: 0;
+            color: #333;
+        }
+        #toggle-settings {
+            font-size: 10px;
+            color: #ccc;
+            cursor: pointer;
+            user-select: none;
+            transition: color 0.3s;
+        }
+        #toggle-settings:hover {
+            color: #4CAF50;
+        }
         .input-container {
             border: 1px solid #e0e0e0;
             border-radius: 4px;
@@ -55,10 +76,49 @@
             border-radius: 4px;
             cursor: pointer;
         }
-        #open-options {
+        .settings-bar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid #eee;
+        }
+        .settings-bar.collapsed {
             display: none;
-            margin-top: 10px;
+        }
+        .settings-bar label {
+            font-size: 11px;
+            color: #666;
+            white-space: nowrap;
+        }
+        .settings-bar input[type="text"] {
+            flex: 1;
             font-size: 12px;
+            padding: 4px 8px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+        .settings-bar input[type="text"]:focus {
+            border-color: #4CAF50;
+        }
+        .settings-bar input[type="text"].saved {
+            border-color: #4CAF50;
+        }
+        .settings-bar input[type="checkbox"] {
+            margin: 0;
+        }
+        .settings-bar .close-settings {
+            font-size: 11px;
+            color: #999;
+            cursor: pointer;
+            margin-left: 4px;
+            user-select: none;
+        }
+        .settings-bar .close-settings:hover {
+            color: #333;
         }
         #goto-flomo {
             font-size: 18px;
@@ -66,6 +126,10 @@
     </style>
 </head>
 <body>
+    <div class="header">
+        <h1>Flomo Input</h1>
+        <span id="toggle-settings">设置</span>
+    </div>
     <div class="input-container">
         <textarea placeholder="现在的想法是..."></textarea>
         <div class="toolbar">
@@ -74,13 +138,17 @@
                 <button title="Italic" data-format="italic">I</button>
                 <button title="Underline" data-format="underline">U</button>
                 <button title="List" data-format="list">•</button>
-                <button title="Link" id="insert-link" data-format="link">🔗</button>
+                <button title="Link" id="insert-link">🔗</button>
                 <button title="Go to Flomo" id="goto-flomo">📝</button>
             </div>
             <button class="submit-button">➡</button>
         </div>
-        <div id="open-options">
-            <a href="#">Configure API URL</a>
+        <div class="settings-bar collapsed" id="settings-bar">
+            <label for="api-url-inline">API:</label>
+            <input type="text" id="api-url-inline" placeholder="请设置 API URL（https://...）">
+            <input type="checkbox" id="foreground-toggle-inline" title="窗口自动置顶前台">
+            <label for="foreground-toggle-inline" style="font-size: 11px; color: #666;">置顶</label>
+            <span class="close-settings" id="close-settings">收起</span>
         </div>
     </div>
     <script src="floating.js"></script>

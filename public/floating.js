@@ -3,7 +3,11 @@
 
     const textarea = document.querySelector('textarea');
     const submitButton = document.querySelector('.submit-button');
-    const openOptionsDiv = document.getElementById('open-options');
+    const settingsBar = document.getElementById('settings-bar');
+    const apiUrlInput = document.getElementById('api-url-inline');
+    const foregroundToggleCheckbox = document.getElementById('foreground-toggle-inline');
+    const toggleSettingsBtn = document.getElementById('toggle-settings');
+    const closeSettingsBtn = document.getElementById('close-settings');
     const STORAGE_KEY = 'flomoInputDraft';
 
     // ---------- Debounce helper ----------
@@ -27,23 +31,9 @@
         });
     }
 
-    const debouncedUpdateWindowSize = debounce(updateWindowSize, 150);
-
     // Initial adjustment
     window.addEventListener('load', () => {
         setTimeout(updateWindowSize, 0);
-    });
-
-    // Listen for window resize
-    window.addEventListener('resize', debouncedUpdateWindowSize);
-
-    // Observe size-related changes only, debounced
-    const observer = new MutationObserver(debouncedUpdateWindowSize);
-    observer.observe(document.body, {
-        childList: true,
-        subtree: true,
-        attributes: true,
-        characterData: true
     });
 
     // ---------- Auto focus textarea on open / focus ----------
@@ -73,7 +63,12 @@
         });
     }
 
-    textarea.addEventListener('input', debounce(saveDraft, 300));
+    const debouncedSaveDraft = debounce(saveDraft, 300);
+    const debouncedResize = debounce(updateWindowSize, 300);
+    textarea.addEventListener('input', () => {
+        debouncedSaveDraft();
+        debouncedResize();
+    });
     window.addEventListener('load', restoreDraft);
 
     // ---------- Submit with loading state ----------
@@ -91,8 +86,9 @@
 
         chrome.storage.sync.get('apiUrl', (data) => {
             if (!data.apiUrl) {
-                showNotification('API URL 未设置，请先在选项中配置', 'error');
-                openOptionsDiv.style.display = 'block';
+                showNotification('API URL 未设置，请先在下方配置', 'error');
+                settingsBar.classList.remove('collapsed');
+                if (apiUrlInput) apiUrlInput.focus();
                 return;
             }
             submitContent(data.apiUrl, content);
@@ -129,7 +125,7 @@
                 textarea.value = '';
                 chrome.storage.local.remove(STORAGE_KEY);
                 showNotification('提交成功！', 'success');
-                checkAndDisplayOpenOptions();
+                // 提交成功后不需要显示 open-options，配置已内置
             })
             .catch((error) => {
                 console.error('Error:', error);
@@ -173,26 +169,85 @@
         }, 3000);
     }
 
-    function checkAndDisplayOpenOptions() {
-        chrome.storage.sync.get('apiUrl', (data) => {
+    // ---------- Inline settings panel ----------
+    function initSettings() {
+        chrome.storage.sync.get(['apiUrl', 'foregroundToggle'], (data) => {
+            if (apiUrlInput) apiUrlInput.value = data.apiUrl || '';
+            if (foregroundToggleCheckbox) foregroundToggleCheckbox.checked = data.foregroundToggle || false;
+
             if (!data.apiUrl) {
-                openOptionsDiv.style.display = 'block';
+                // 未配置时自动展开配置条
+                settingsBar.classList.remove('collapsed');
+                toggleSettingsBtn.style.display = 'none';
             } else {
-                openOptionsDiv.style.display = 'none';
+                // 已配置时收起，显示"设置"入口
+                settingsBar.classList.add('collapsed');
+                toggleSettingsBtn.style.display = 'inline';
             }
         });
     }
 
-    window.addEventListener('load', checkAndDisplayOpenOptions);
+    window.addEventListener('load', initSettings);
 
-    openOptionsDiv.addEventListener('click', (e) => {
-        e.preventDefault();
-        chrome.runtime.openOptionsPage();
-    });
+    // 展开/收起切换
+    if (toggleSettingsBtn) {
+        toggleSettingsBtn.addEventListener('click', () => {
+            settingsBar.classList.toggle('collapsed');
+        });
+    }
 
+    if (closeSettingsBtn) {
+        closeSettingsBtn.addEventListener('click', () => {
+            settingsBar.classList.add('collapsed');
+        });
+    }
+
+    // 自动保存 API URL
+    function saveApiUrl() {
+        const value = apiUrlInput.value.trim();
+        chrome.storage.sync.set({ apiUrl: value }, () => {
+            if (chrome.runtime.lastError) {
+                console.error('保存 API URL 失败:', chrome.runtime.lastError);
+                return;
+            }
+            // 视觉反馈：边框闪绿
+            apiUrlInput.classList.add('saved');
+            setTimeout(() => apiUrlInput.classList.remove('saved'), 1500);
+
+            // 如果是首次配置（从空到有值），收起配置条并显示设置入口
+            if (value) {
+                toggleSettingsBtn.style.display = 'inline';
+            }
+        });
+    }
+
+    // 自动保存前台置顶开关
+    function saveForegroundToggle() {
+        const checked = foregroundToggleCheckbox.checked;
+        chrome.storage.sync.set({ foregroundToggle: checked }, () => {
+            if (chrome.runtime.lastError) {
+                console.error('保存设置失败:', chrome.runtime.lastError);
+            }
+        });
+    }
+
+    if (apiUrlInput) {
+        apiUrlInput.addEventListener('input', debounce(saveApiUrl, 500));
+    }
+
+    if (foregroundToggleCheckbox) {
+        foregroundToggleCheckbox.addEventListener('change', saveForegroundToggle);
+    }
+
+    // 监听 storage 变化（如从其他页面修改）
     chrome.storage.onChanged.addListener((changes, namespace) => {
-        if (namespace === 'sync' && 'apiUrl' in changes) {
-            checkAndDisplayOpenOptions();
+        if (namespace === 'sync') {
+            if ('apiUrl' in changes && apiUrlInput) {
+                apiUrlInput.value = changes.apiUrl.newValue || '';
+            }
+            if ('foregroundToggle' in changes && foregroundToggleCheckbox) {
+                foregroundToggleCheckbox.checked = changes.foregroundToggle.newValue || false;
+            }
         }
     });
 
@@ -208,7 +263,7 @@
         saveDraft();
     }
 
-    const formatButtons = document.querySelectorAll('.formatting-tools button[data-format]');
+    const formatButtons = document.querySelectorAll('.formatting-tools button[data-format]:not(#insert-link)');
     formatButtons.forEach((btn) => {
         btn.addEventListener('click', () => {
             const format = btn.dataset.format;
@@ -225,13 +280,7 @@
                 case 'list':
                     wrapText('\n- ', '');
                     break;
-                case 'link': {
-                    const url = prompt('请输入链接地址:', 'https://');
-                    if (url) {
-                        wrapText('[', '](' + url + ')');
-                    }
-                    break;
-                }
+
             }
         });
     });

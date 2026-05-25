@@ -155,13 +155,22 @@ function startEnsureVisibilityInterval() {
 // 监听来自浮动窗口的消息
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === 'resize' && sender.tab && sender.tab.windowId === floatingWindowId) {
-        chrome.system.display.getInfo((displays) => {
-            const primaryDisplay = displays.find(d => d.isPrimary) || displays[0];
-            const maxWidth = primaryDisplay.workArea.width * 0.8;
-            const maxHeight = primaryDisplay.workArea.height * 0.8;
-            chrome.windows.update(floatingWindowId, {
-                width: Math.min(Math.max(message.width, 200), maxWidth),  // Set minimum and maximum width
-                height: Math.min(Math.max(message.height, 100), maxHeight) // Set minimum and maximum height
+        // 先获取当前窗口大小，只扩大不缩小，避免与用户手动拉伸冲突
+        chrome.windows.get(floatingWindowId, (win) => {
+            if (chrome.runtime.lastError || !win) return;
+
+            const needResize = message.width > win.width || message.height > win.height;
+            if (!needResize) return;
+
+            chrome.system.display.getInfo((displays) => {
+                if (chrome.runtime.lastError || !displays || !displays.length) return;
+                const primaryDisplay = displays.find(d => d.isPrimary) || displays[0];
+                const maxWidth = primaryDisplay.workArea.width * 0.8;
+                const maxHeight = primaryDisplay.workArea.height * 0.8;
+                chrome.windows.update(floatingWindowId, {
+                    width: Math.min(Math.max(message.width, 200), maxWidth),
+                    height: Math.min(Math.max(message.height, 100), maxHeight)
+                });
             });
         });
     }
