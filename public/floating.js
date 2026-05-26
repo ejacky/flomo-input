@@ -77,6 +77,17 @@
         submitButton.textContent = loading ? '⏳' : '➡';
     }
 
+    function isValidApiUrl(url) {
+        if (!url) return false;
+        try {
+            const parsed = new URL(url);
+            // 必须有协议头且 host 不为空（排除 https:// 这种空地址）
+            return (parsed.protocol === 'https:' || parsed.protocol === 'http:') && !!parsed.host;
+        } catch (e) {
+            return false;
+        }
+    }
+
     function submit() {
         const content = textarea.value.trim();
         if (!content) {
@@ -84,15 +95,26 @@
             return;
         }
 
-        chrome.storage.sync.get('apiUrl', (data) => {
-            if (!data.apiUrl) {
-                showNotification('API URL 未设置，请先在下方配置', 'error');
-                settingsBar.classList.remove('collapsed');
-                if (apiUrlInput) apiUrlInput.focus();
-                return;
-            }
-            submitContent(data.apiUrl, content);
-        });
+        // 优先读取输入框实时值，避免 blur 未触发导致使用旧值
+        const liveApiUrl = apiUrlInput ? apiUrlInput.value.trim() : '';
+
+        if (!liveApiUrl) {
+            showNotification('API URL 未设置，请先在下方配置', 'error');
+            settingsBar.classList.remove('collapsed');
+            if (apiUrlInput) apiUrlInput.focus();
+            return;
+        }
+
+        if (!isValidApiUrl(liveApiUrl)) {
+            showNotification('API URL 格式不正确，请检查', 'error');
+            settingsBar.classList.remove('collapsed');
+            if (apiUrlInput) apiUrlInput.focus();
+            return;
+        }
+
+        // 如果有效但未保存，先兜底保存
+        chrome.storage.sync.set({ apiUrl: liveApiUrl });
+        submitContent(liveApiUrl, content);
     }
 
     submitButton.addEventListener('click', submit);
@@ -210,9 +232,9 @@
                 console.error('保存 API URL 失败:', chrome.runtime.lastError);
                 return;
             }
-            // 视觉反馈：边框闪绿
+            // 视觉反馈：边框变绿表示已保存
             apiUrlInput.classList.add('saved');
-            setTimeout(() => apiUrlInput.classList.remove('saved'), 1500);
+            apiUrlInput.classList.remove('error');
 
             // 如果是首次配置（从空到有值），收起配置条并显示设置入口
             if (value) {
@@ -220,6 +242,39 @@
             }
         });
     }
+
+    // 焦点进入：进入编辑态，清除状态色
+    if (apiUrlInput) {
+        apiUrlInput.addEventListener('focus', () => {
+            apiUrlInput.classList.remove('saved', 'error');
+        });
+    }
+
+    // 焦点离开：校验并保存
+    if (apiUrlInput) {
+        apiUrlInput.addEventListener('blur', () => {
+            const value = apiUrlInput.value.trim();
+            if (!value) {
+                // 允许清空
+                saveApiUrl();
+                return;
+            }
+            if (isValidApiUrl(value)) {
+                saveApiUrl();
+            } else {
+                apiUrlInput.classList.add('error');
+                showNotification('请输入有效的 API URL（https://...）', 'error');
+            }
+        });
+    }
+
+    // 窗口关闭前兜底保存
+    window.addEventListener('beforeunload', () => {
+        const value = apiUrlInput ? apiUrlInput.value.trim() : '';
+        if (value && isValidApiUrl(value)) {
+            chrome.storage.sync.set({ apiUrl: value });
+        }
+    });
 
     // 自动保存前台置顶开关
     function saveForegroundToggle() {
@@ -229,10 +284,6 @@
                 console.error('保存设置失败:', chrome.runtime.lastError);
             }
         });
-    }
-
-    if (apiUrlInput) {
-        apiUrlInput.addEventListener('input', debounce(saveApiUrl, 500));
     }
 
     if (foregroundToggleCheckbox) {
