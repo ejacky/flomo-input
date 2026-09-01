@@ -67,6 +67,59 @@
         <label for="foreground-toggle">Enable foreground toggle:</label>
         <input type="checkbox" id="foreground-toggle">
     </div>
+    
+    <hr style="margin: 30px 0; border: none; border-top: 1px solid #ddd;">
+    
+    <h2 style="font-size: 20px; margin-bottom: 15px;">多平台同步配置</h2>
+    <p style="font-size: 12px; color: #666; margin-bottom: 20px;">
+        当输入内容包含 <code>#public</code> 标签时，会自动同步到以下已启用的平台。
+    </p>
+    
+    <!-- 豆瓣配置 -->
+    <div style="border: 1px solid #ddd; border-radius: 4px; padding: 15px; margin-bottom: 15px;">
+        <div class="form-group" style="margin-bottom: 10px;">
+            <label for="douban-enabled" style="flex: 0 0 auto;">豆瓣广播:</label>
+            <input type="checkbox" id="douban-enabled" style="margin-left: 10px;">
+        </div>
+        <div class="form-group" style="margin-bottom: 0;">
+            <label for="douban-cookie" style="flex: 0 0 150px;">Cookie:</label>
+            <input type="text" id="douban-cookie" placeholder="请输入豆瓣 Cookie" style="flex: 1;">
+        </div>
+        <p style="font-size: 11px; color: #999; margin-top: 5px; margin-left: 160px;">
+            在豆瓣网站登录后，打开开发者工具 (F12)，在 Network 标签中找到任意请求，复制 Request Headers 中的 Cookie 值
+        </p>
+    </div>
+    
+    <!-- 微博配置 -->
+    <div style="border: 1px solid #ddd; border-radius: 4px; padding: 15px; margin-bottom: 15px;">
+        <div class="form-group" style="margin-bottom: 10px;">
+            <label for="weibo-enabled" style="flex: 0 0 auto;">微博:</label>
+            <input type="checkbox" id="weibo-enabled" style="margin-left: 10px;">
+        </div>
+        <div class="form-group" style="margin-bottom: 0;">
+            <label for="weibo-cookie" style="flex: 0 0 150px;">Cookie:</label>
+            <input type="text" id="weibo-cookie" placeholder="请输入微博 Cookie" style="flex: 1;">
+        </div>
+        <p style="font-size: 11px; color: #999; margin-top: 5px; margin-left: 160px;">
+            在微博网站登录后，打开开发者工具 (F12)，在 Network 标签中找到任意请求，复制 Request Headers 中的 Cookie 值
+        </p>
+    </div>
+    
+    <!-- 小红书配置 -->
+    <div style="border: 1px solid #ddd; border-radius: 4px; padding: 15px; margin-bottom: 15px;">
+        <div class="form-group" style="margin-bottom: 10px;">
+            <label for="xiaohongshu-enabled" style="flex: 0 0 auto;">小红书笔记:</label>
+            <input type="checkbox" id="xiaohongshu-enabled" style="margin-left: 10px;">
+        </div>
+        <div class="form-group" style="margin-bottom: 0;">
+            <label for="xiaohongshu-cookie" style="flex: 0 0 150px;">Cookie:</label>
+            <input type="text" id="xiaohongshu-cookie" placeholder="请输入小红书 Cookie" style="flex: 1;">
+        </div>
+        <p style="font-size: 11px; color: #999; margin-top: 5px; margin-left: 160px;">
+            在小红书网站登录后，打开开发者工具 (F12)，在 Network 标签中找到任意请求，复制 Request Headers 中的 Cookie 值
+        </p>
+    </div>
+    
     <button id="save">Save</button>
     <p id="status"></p>
 

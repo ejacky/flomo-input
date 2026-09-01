@@ -186,4 +186,20 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'GET_CURRENT_TAB_URL') {
     sendResponse({url: currentTabUrl});
   }
+  
+  // 处理多平台同步请求
+  if (message.type === 'SYNC_TO_PLATFORMS') {
+    import('./sync/manager.js')
+      .then(({ syncToPlatforms }) => {
+        return syncToPlatforms(message.content);
+      })
+      .then((results) => {
+        sendResponse({ success: true, results });
+      })
+      .catch((error) => {
+        console.error('Sync error:', error);
+        sendResponse({ success: false, error: error.message || '同步失败' });
+      });
+    return true; // 保持消息通道开放以支持异步响应
+  }
 });
