@@ -51,15 +51,20 @@ function submitContent(apiUrl, content) {
     })
     .then(response => response.json())
     .then(data => {
-        console.log('Success:', data);
-        document.querySelector('textarea').value = '';
-        // 如果需要显示通知，可以取消注释以下行，目前的弹出框影响用户体验，需要改进
-        //showNotification('Content submitted successfully!', 'success');
-        checkAndDisplayOpenOptions(); // 重新检查 API URL 状态
+        if (data.code === 0) {
+            console.log('Success:', data);
+            document.querySelector('textarea').value = '';
+            // 如果需要显示通知，可以取消注释以下行，目前的弹出框影响用户体验，需要改进
+            //showNotification('Content submitted successfully!', 'success');
+            checkAndDisplayOpenOptions(); // 重新检查 API URL 状态
+        } else {
+            console.error('API error:', data);
+            showNotification(data.message || '提交失败，请检查 API 地址。', 'error');
+        }
     })
     .catch((error) => {
         console.error('Error:', error);
-        showNotification('Error submitting content. Please try again.', 'error');
+        showNotification('提交失败，请检查网络或 API 地址。', 'error');
     });
 }
 
